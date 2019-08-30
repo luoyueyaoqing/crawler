@@ -1,0 +1,46 @@
+import time
+import csv
+import os
+
+def download_image(image_url):
+	# 根据图片地址下载海报到指定文件夹
+	name = image_url.split('/')[-1]
+	folder = 'movie250_img'
+	if not os.path.exists(folder):
+		os.makedirs(folder)
+	path = os.path.join(folder, name) # 文件路径
+	content = requests.get(image_url).content
+	with open(path, 'wb') as fb:
+		fb.write(content)
+
+def movie_single_info(subject):
+	# 获取单个电影的信息
+	m = []	
+	m.append(subject.get('title')) # 获取电影名
+	m.append(subject.get('rating').get('average')) # 获取电影评分
+	m.append(','.join(s.get('name') for s in subject['casts'])) # 获取主演名	
+	image_url = subject.get('images').get('small') # 获取海报地址
+	m.append(image_url)
+	# download_image(image_url) # 下载海报
+	return m
+
+def movies_info(url):
+	# 从 url 中解析出该页面内所有的电影信息
+	ms = []
+	req = requests.get(url).json()
+	time.sleep(1)
+	subjects = req.get('subjects')
+	ms = [movie_single_info(i) for i in subjects]
+	return ms
+
+def main():
+	for start in range(0,250,20):
+		url = 'https://api.douban.com/v2/movie/top250?start={}&apikey=0df993c66c0c636e29ecbb5344252a4a'.format(start)
+		ms = movies_info(url)
+
+		with open('movie250.csv', 'a+', encoding='utf-8') as f:
+			writer = csv.writer(f)
+			writer.writerows(ms)
+
+if __name__ == '__main__':
+    main()
