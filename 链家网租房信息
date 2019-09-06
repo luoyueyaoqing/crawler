@@ -1,0 +1,46 @@
+import requests
+import csv
+import re
+from bs4 import BeautifulSoup
+
+
+def house_single_info(div):
+	# 获取单个房屋的信息
+	lst = []
+	href = div.a['href']
+	lst.append(href) # 房屋链接
+	_ = div.find('p', class_="content__list--item--des").get_text()
+	house = re.sub(r'\s', '', _).split('/')
+	lst.append(house[0]) # 房屋地址
+	lst.append(house[1]) # 房屋面积
+	lst.append(house[2]) # 房屋朝向
+	lst.append(house[3]) # 房屋格局
+	lst.append(house[4]) # 房屋楼层
+	price = div.find('span', class_='content__list--item-price').get_text()
+	lst.append(price) # 房屋价格
+	other = div.find('p', class_="content__list--item--bottom oneline").get_text()
+	other = re.sub(r'\s', '', other) # 房屋其余信息
+	lst.append(other)
+	return lst
+
+def houses_info(url):
+	# 从 url 中解析出该页面内所有的房屋信息
+	hs = []
+	headers = {'user-agent': 'Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36'}
+	html = requests.get(url, headers=headers).text
+	soup = BeautifulSoup(html, 'html.parser')
+	houses = soup.find_all('div', class_='content__list--item--main')
+	hs = [house_single_info(i) for i in houses]
+	return hs
+
+def main():
+	for i in range(1, 4):
+		url = f'https://sh.lianjia.com/zufang/pg{i}'
+		hs = houses_info(url)
+
+		with open('lianjia.csv', 'a+', encoding='utf-8') as f:
+			writer = csv.writer(f)
+			writer.writerows(hs)
+
+if __name__ == '__main__':
+    main()
